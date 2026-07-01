@@ -10,14 +10,22 @@ import { AlertTriangle, ClipboardList, CheckCircle2, Wrench } from 'lucide-react
 
 export default function WorkOrders() {
   const { filters, updateFilters, isLoading, refetchAll, data } = useDashboard();
-  const { openWO, summary } = data;
+  const { openWO, woExt } = data;
 
-  const counts = {
-    total: summary?.totalWO.value ?? 0,
-    open: summary?.openWO.value ?? 0,
-    closed: summary?.closedWO.value ?? 0,
-    breakdown: summary?.breakdown.value ?? 0,
-  };
+const counts = {
+  total:
+    (woExt?.open ?? 0) +
+    (woExt?.closed ?? 0),
+
+  open:
+    woExt?.open ?? 0,
+
+  closed:
+    woExt?.closed ?? 0,
+
+  breakdown:
+    woExt?.breakdown ?? 0,
+};
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans">

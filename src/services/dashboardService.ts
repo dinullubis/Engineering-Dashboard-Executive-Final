@@ -114,9 +114,26 @@ export const dashboardService = {
   async getAttendanceRecords(_f: FilterState): Promise<AttendanceRecord[]>   { return safe(() => googleSheetService.getAttendanceRecords(), []); },
   async getOvertimeRecords(_f: FilterState): Promise<OvertimeRecord[]>       { return safe(() => googleSheetService.getOvertimeRecords(), []); },
   async getTeamPerformance(_f: FilterState): Promise<TeamPerformanceSummary[]> { return safe(() => googleSheetService.getTeamPerformance(), []); },
-  async getOpenVsClosedTrend(_f: FilterState): Promise<TrendPoint[]>  { return safe(() => googleSheetService.getTrendData(), []); },
-  async getOTvsBreakdown(_f: FilterState): Promise<TrendPoint[]>      { return safe(() => googleSheetService.getTrendData(), []); },
-  async getBreakdownVsNonBreakdown(_f: FilterState): Promise<TrendPoint[]> { return safe(() => googleSheetService.getTrendData(), []); },
+  async getOpenVsClosedTrend(_f: FilterState): Promise<any[]> {
+  return safe(
+    async () => (await googleSheetService.getKorelasi()).openVsClosed,
+    []
+  );
+},
+
+async getOTvsBreakdown(_f: FilterState): Promise<any[]> {
+  return safe(
+    async () => (await googleSheetService.getKorelasi()).otVsBreakdown,
+    []
+  );
+},
+
+async getBreakdownVsNonBreakdown(_f: FilterState): Promise<any[]> {
+  return safe(
+    async () => (await googleSheetService.getKorelasi()).breakdownVsNonBreakdown,
+    []
+  );
+},
 
   async getUtility(_f: FilterState): Promise<UtilityData> {
     return safe(() => googleSheetService.getUtility(), EMPTY_UTILITY);

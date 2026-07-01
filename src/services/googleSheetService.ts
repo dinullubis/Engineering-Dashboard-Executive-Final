@@ -27,7 +27,36 @@ import type {
   TeamPerformanceSummary,
   WorkOrderSummaryExtended,
 } from '../types';
+interface ApiAttendanceResponse {
+  summary: {
+    totalEmployee: number;
+    hadir: number;
+    sakit: number;
+    ijin: number;
+    cuti: number;
+    attendanceRate: number;
+  };
+  trend: {
+    date: string;
+    hadir: number;
+    sakit: number;
+    ijin: number;
+    cuti: number;
+  }[];
+  team: {
+    team: string;
+    hadir: number;
+    sakit: number;
+    ijin: number;
+    cuti: number;
+  }[];
+}
 
+interface ApiKorelasiResponse {
+  openVsClosed: any[];
+  breakdownVsNonBreakdown: any[];
+  otVsBreakdown: any[];
+}
 /* ── Config ──────────────────────────────────────────────── */
 
 const BASE_URL =
@@ -63,7 +92,46 @@ async function fetchSummary(): Promise<ApiSummaryResponse> {
   });
   return summaryInFlight;
 }
+let attendanceInFlight: Promise<ApiAttendanceResponse> | null = null;
 
+async function fetchAttendance(): Promise<ApiAttendanceResponse> {
+
+  if (attendanceInFlight) return attendanceInFlight;
+
+  attendanceInFlight = apiFetch<ApiAttendanceResponse>('attendance')
+    .catch(() => ({
+      summary: {
+        totalEmployee: 0,
+        hadir: 0,
+        sakit: 0,
+        ijin: 0,
+        cuti: 0,
+        attendanceRate: 0,
+      },
+      trend: [],
+      team: [],
+    }))
+    .finally(() => {
+      attendanceInFlight = null;
+    });
+
+  return attendanceInFlight;
+
+}
+
+let korelasiInFlight: Promise<ApiKorelasiResponse> | null = null;
+
+async function fetchKorelasi(): Promise<ApiKorelasiResponse> {
+
+  if (korelasiInFlight) return korelasiInFlight;
+
+  korelasiInFlight = apiFetch<ApiKorelasiResponse>("korelasi")
+    .finally(() => {
+      korelasiInFlight = null;
+    });
+
+  return korelasiInFlight;
+}
 /* ── Safe metric helper ──────────────────────────────────── */
 
 const m = (metric: { value: number; trend: number } | undefined, fallback = 0) => ({
@@ -87,9 +155,6 @@ const EMPTY_UTILITY_DATA: UtilityData = {
   water:         { ...EMPTY_UTILITY_READING },
 };
 
-const EMPTY_ATTENDANCE_SUMMARY: AttendanceSummary = {
-  present: 0, absent: 0, sick: 0, leave: 0, late: 0, total: 0, presentPct: 0,
-};
 
 const EMPTY_OVERTIME_SUMMARY: OvertimeSummary = {
   totalHours: 0, employeesOnOT: 0, avgHoursPerEmployee: 0,
@@ -119,19 +184,62 @@ export const googleSheetService = {
   },
 
   async getWOSummaryExtended(): Promise<WorkOrderSummaryExtended> {
-    const s = await fetchSummary();
-    return {
-      open:             s.woOpen?.value    ?? 0,
-      closed:           s.woClose?.value   ?? 0,
-      breakdown:        s.breakdown?.value ?? 0,
-      nonBreakdownHigh: 0, // pending ?action=wo
-      nonBreakdownLow:  0,
-      waitingPart:      0,
-      waitingVendor:    0,
-      inProgress:       0,
-      onHold:           0,
-    };
-  },
+
+  const wo = await apiFetch<WorkOrder[]>("wo");
+
+  const open = wo.filter(x => x.status === "OPEN").length;
+
+  const closed = wo.filter(x => x.status === "CLOSED").length;
+
+  const breakdown = wo.filter(x => x.isBreakdown).length;
+
+  const nonBreakdownHigh = wo.filter(
+    x => x.category === "NON BKD HIGH"
+  ).length;
+
+  const nonBreakdownLow = wo.filter(
+    x => x.category === "NON BKD LOW"
+  ).length;
+
+  const waitingPart = wo.filter(
+    x => x.status === "WAITING PARTS"
+  ).length;
+
+  const waitingVendor = wo.filter(
+    x => x.status === "WAITING VENDOR"
+  ).length;
+
+  const inProgress = wo.filter(
+    x => x.status === "IN PROGRESS"
+  ).length;
+
+  const onHold = wo.filter(
+    x => x.status === "ON HOLD"
+  ).length;
+
+  return {
+
+    open,
+
+    closed,
+
+    breakdown,
+
+    nonBreakdownHigh,
+
+    nonBreakdownLow,
+
+    waitingPart,
+
+    waitingVendor,
+
+    inProgress,
+
+    onHold,
+
+  };
+
+},
 
   async getOvertimeSummary(): Promise<OvertimeSummary> {
     const s = await fetchSummary();
@@ -145,17 +253,88 @@ export const googleSheetService = {
   // These will be replaced once getWO / getAttendance / getTeam /
   // getKorelasi are implemented in the Apps Script.
 
-  async getWorkOrders(): Promise<WorkOrder[]>                   { return []; },
+  async getWorkOrders(): Promise<WorkOrder[]> {
+  return apiFetch<WorkOrder[]>("wo");
+},
   async getTopEngineer(): Promise<Technician[]>                 { return []; },
   async getTrendData(): Promise<TrendPoint[]>                   { return []; },
   async getUtility(): Promise<UtilityData>                      { return { ...EMPTY_UTILITY_DATA }; },
   async getPM(): Promise<PMItem[]>                              { return []; },
   async getAlarms(): Promise<AlarmItem[]>                       { return []; },
 
-  async getAttendanceSummary(): Promise<AttendanceSummary>      { return { ...EMPTY_ATTENDANCE_SUMMARY }; },
-  async getAttendanceTrend(): Promise<AttendanceTrend[]>        { return []; },
-  async getAttendanceRecords(): Promise<AttendanceRecord[]>     { return []; },
+  async getAttendanceSummary(): Promise<AttendanceSummary> {
+
+  const a = await fetchAttendance();
+
+  return {
+
+    present: a.summary.hadir,
+
+    absent:
+      a.summary.sakit +
+      a.summary.ijin +
+      a.summary.cuti,
+
+    sick: a.summary.sakit,
+
+    leave:
+      a.summary.ijin +
+      a.summary.cuti,
+
+    late: 0,
+
+    total: a.summary.totalEmployee,
+
+    presentPct: a.summary.attendanceRate,
+
+  };
+
+},
+
+async getAttendanceTrend(): Promise<AttendanceTrend[]> {
+
+  const a = await fetchAttendance();
+
+  return (a.trend ?? []).map(row => ({
+
+    date: row.date,
+
+    present: row.hadir,
+
+    absent:
+      row.sakit +
+      row.ijin +
+      row.cuti,
+
+    sick: row.sakit,
+
+    leave:
+      row.ijin +
+      row.cuti,
+
+    late: 0,
+
+    overtime: 0,
+
+  }));
+
+},
+
+async getAttendanceRecords(): Promise<AttendanceRecord[]> {
+
+  return [];
+
+},
 
   async getOvertimeRecords(): Promise<OvertimeRecord[]>         { return []; },
-  async getTeamPerformance(): Promise<TeamPerformanceSummary[]> { return []; },
+  async getTeamPerformance(): Promise<TeamPerformanceSummary[]> {
+
+  return apiFetch<TeamPerformanceSummary[]>("team");
+
+},
+async getKorelasi(): Promise<ApiKorelasiResponse> {
+
+  return fetchKorelasi();
+
+},
 };
