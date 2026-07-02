@@ -97,14 +97,13 @@ export const dashboardService = {
   async getOpenWO(_f: FilterState): Promise<WorkOrder[]>              { return safe(() => googleSheetService.getWorkOrders(), []); },
   async getLongestOpenWOs(_f: FilterState): Promise<WorkOrder[]>      { return safe(() => googleSheetService.getWorkOrders(), []); },
   async getTopEngineer(_f: FilterState): Promise<Technician[]> {
-
   alert("GET TOP ENGINEER");
 
   return safe(
     () => googleSheetService.getTopEngineer(),
     []
   );
-} return safe(() => googleSheetService.getTopEngineer(), []); },
+},
   async getDailyTrend(_f: FilterState): Promise<TrendPoint[]>         { return safe(() => googleSheetService.getTrendData(), []); },
   async getWeeklyTrend(_f: FilterState): Promise<TrendPoint[]>        { return safe(() => googleSheetService.getTrendData(), []); },
   async getMonthlyTrend(_f: FilterState): Promise<TrendPoint[]>       { return safe(() => googleSheetService.getTrendData(), []); },

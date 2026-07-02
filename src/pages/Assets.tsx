@@ -4,7 +4,7 @@ import { PageHeader } from '../components/layout/PageHeader';
 import { AnimatedCard } from '../components/cards/AnimatedCard';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Database, Search, Filter } from 'lucide-react';
-import { mockAssets } from '../data/mockData';
+const mockAssets: any[] = [];
 
 const AREAS = ['All', 'Packaging', 'Processing', 'Utilities', 'Finishing', 'QC'];
 
