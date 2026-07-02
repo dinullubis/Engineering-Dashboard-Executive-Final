@@ -90,7 +90,8 @@ export default function Dashboard() {
     attendanceTrend, openVsClosed, bdVsNonBd, otVsBreakdown, alarm,
     longestOpenWOs,
   } = data;
-
+console.log("TOP ENGINEER =", topEngineer);
+console.log("TEAM PERFORMANCE =", teams);
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans">
       <Sidebar />
