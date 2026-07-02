@@ -258,67 +258,12 @@ export const googleSheetService = {
 },
 async getTopEngineer(): Promise<Technician[]> {
   return apiFetch<Technician[]>("technician");
-}
-  const wo = await apiFetch<WorkOrder[]>("wo");
-
-  const map = new Map<string, Technician>();
-
-  wo.forEach(w => {
-
-    const name = w.pic || "-";
-
-    if (!map.has(name)) {
-
-      map.set(name, {
-        id: name,
-        name,
-        team: w.team || "-",
-        shift: w.shift || "-",
-        completionRate: 0,
-        avgResponseTime: 0,
-        avgRepairTime: 0,
-        totalWO: 0,
-      });
-
-    }
-
-    const t = map.get(name)!;
-
-    t.totalWO++;
-
-    t.avgRepairTime += Number(w.durationHours) || 0;
-
-    if (w.status === "CLOSED") {
-      t.completionRate++;
-    }
-
-  });
-
-  map.forEach(t => {
-
-    if (t.totalWO > 0) {
-
-      t.completionRate = Math.round(
-        t.completionRate / t.totalWO * 100
-      );
-
-      t.avgRepairTime = Number(
-        (t.avgRepairTime / t.totalWO).toFixed(1)
-      );
-
-    }
-
-  });
-
-  return [...map.values()]
-    .sort((a, b) => b.totalWO - a.totalWO);
-
-}
-  async getTrendData(): Promise<any> {
-
-  return fetchTrendData();
-
 },
+ async getTrendData(): Promise<any> {
+
+  return fetchKorelasi();
+
+}, 
   async getUtility(): Promise<UtilityData>                      { return { ...EMPTY_UTILITY_DATA }; },
   async getPM(): Promise<PMItem[]>                              { return []; },
   async getAlarms(): Promise<AlarmItem[]>                       { return []; },
@@ -398,15 +343,4 @@ async getKorelasi(): Promise<ApiKorelasiResponse> {
   return fetchKorelasi();
 
 },
-async function fetchTrendData() {
-
-  const k = await fetchKorelasi();
-
-  return {
-    openVsClosed: k.openVsClosed,
-    otVsBreakdown: k.otVsBreakdown,
-    breakdownVsNonBreakdown: k.breakdownVsNonBreakdown,
-  };
-
-}
 };
