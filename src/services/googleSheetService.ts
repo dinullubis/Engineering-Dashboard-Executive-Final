@@ -257,7 +257,58 @@ export const googleSheetService = {
   return apiFetch<WorkOrder[]>("wo");
 },
 async getTopEngineer(): Promise<Technician[]> {
-  return apiFetch<Technician[]>("technician");
+
+  alert("A");
+
+  const wo = await apiFetch<WorkOrder[]>("wo");
+
+  alert("B");
+
+  const map = new Map<string, Technician>();
+
+  wo.forEach(w => {
+    const name = w.pic || "-";
+
+    if (!map.has(name)) {
+      map.set(name, {
+        id: name,
+        name,
+        team: w.team || "-",
+        shift: w.shift || "-",
+        completionRate: 0,
+        avgResponseTime: 0,
+        avgRepairTime: 0,
+        totalWO: 0,
+      });
+    }
+
+    const t = map.get(name)!;
+
+    t.totalWO++;
+    t.avgRepairTime += Number(w.durationHours) || 0;
+
+    if (w.status === "CLOSED") {
+      t.completionRate++;
+    }
+  });
+
+  alert("C");
+
+  map.forEach(t => {
+    if (t.totalWO > 0) {
+      t.completionRate = Math.round(
+        (t.completionRate / t.totalWO) * 100
+      );
+
+      t.avgRepairTime = Number(
+        (t.avgRepairTime / t.totalWO).toFixed(1)
+      );
+    }
+  });
+
+  alert("D");
+
+  return [...map.values()].sort((a, b) => b.totalWO - a.totalWO);
 },
  async getTrendData(): Promise<any> {
 
